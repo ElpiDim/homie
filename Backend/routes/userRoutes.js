@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { getMe, updateMe, updateMyPreferences } = require('../controllers/userController');
-const auth = require('../middleware/auth'); // Renamed from authMiddleware
+const auth = require('../middleware/auth');
+const { updateMeSchema, updatePreferencesSchema, validate } = require('../utils/validators');
 
-// All routes in this file are protected, so we can use the middleware at the top
+// All routes in this file are protected
 router.use(auth);
 
 // @route   GET api/users/me
@@ -14,11 +15,11 @@ router.get('/me', getMe);
 // @route   PUT api/users/me
 // @desc    Update user's personal info
 // @access  Private
-router.put('/me', updateMe);
+router.put('/me', updateMeSchema, validate, updateMe);
 
 // @route   PUT api/users/me/preferences
 // @desc    Update user's preferences and complete onboarding
 // @access  Private
-router.put('/me/preferences', updateMyPreferences);
+router.put('/me/preferences', updatePreferencesSchema, validate, updateMyPreferences);
 
 module.exports = router;

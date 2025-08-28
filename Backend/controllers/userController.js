@@ -5,10 +5,9 @@ const User = require('../models/User');
 // @access  Private
 const getMe = async (req, res, next) => {
   try {
-    // req.user is set by auth middleware
-    const user = await User.findById(req.user.userId);
+    const user = await User.findById(req.user.userId).select('-password');
     if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: 'User not found' });
     }
     res.json(user);
   } catch (err) {
@@ -20,33 +19,25 @@ const getMe = async (req, res, next) => {
 // @route   PUT /api/users/me
 // @access  Private
 const updateMe = async (req, res, next) => {
-  // Destructure name and the nested personalInfo fields from req.body
   const { name, age, householdSize, hasFamily, hasPets, smoker, occupation, salary, isWillingToHaveRoommate } = req.body;
 
   const fieldsToUpdate = {};
   if (name) fieldsToUpdate.name = name;
-  
-  // Build the personalInfo object
-  const personalInfo = {};
-  if (age !== undefined) personalInfo.age = age;
-  if (householdSize !== undefined) personalInfo.householdSize = householdSize;
-  if (hasFamily !== undefined) personalInfo.hasFamily = hasFamily;
-  if (hasPets !== undefined) personalInfo.hasPets = hasPets;
-  if (smoker !== undefined) personalInfo.smoker = smoker;
-  if (occupation !== undefined) personalInfo.occupation = occupation;
-  if (salary !== undefined) personalInfo.salary = salary;
-  if (isWillingToHaveRoommate !== undefined) personalInfo.isWillingToHaveRoommate = isWillingToHaveRoommate;
-
-  if (Object.keys(personalInfo).length > 0) {
-      fieldsToUpdate.personalInfo = personalInfo;
-  }
+  if (age !== undefined) fieldsToUpdate.age = age;
+  if (householdSize !== undefined) fieldsToUpdate.householdSize = householdSize;
+  if (hasFamily !== undefined) fieldsToUpdate.hasFamily = hasFamily;
+  if (hasPets !== undefined) fieldsToUpdate.hasPets = hasPets;
+  if (smoker !== undefined) fieldsToUpdate.smoker = smoker;
+  if (occupation) fieldsToUpdate.occupation = occupation;
+  if (salary !== undefined) fieldsToUpdate.salary = salary;
+  if (isWillingToHaveRoommate !== undefined) fieldsToUpdate.isWillingToHaveRoommate = isWillingToHaveRoommate;
 
   try {
     const user = await User.findByIdAndUpdate(
       req.user.userId,
       { $set: fieldsToUpdate },
       { new: true, runValidators: true }
-    );
+    ).select('-password');
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -62,24 +53,9 @@ const updateMe = async (req, res, next) => {
 // @route   PUT /api/users/me/preferences
 // @access  Private
 const updateMyPreferences = async (req, res, next) => {
-  const { type, location, minPrice, maxPrice, minSqm, maxSqm, bedrooms, bathrooms, petsAllowed, smokingAllowed, furnished } = req.body;
-
-  const preferences = {
-    type,
-    location,
-    minPrice,
-    maxPrice,
-    minSqm,
-    maxSqm,
-    bedrooms,
-    bathrooms,
-    petsAllowed,
-    smokingAllowed,
-    furnished
-  };
+  const { preferences } = req.body;
 
   try {
-    // Also set hasCompletedOnboarding to true
     const updateData = {
       preferences,
       hasCompletedOnboarding: true,
@@ -89,7 +65,7 @@ const updateMyPreferences = async (req, res, next) => {
       req.user.userId,
       { $set: updateData },
       { new: true, runValidators: true }
-    );
+    ).select('-password');
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
